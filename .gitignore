@@ -14,6 +14,15 @@ gradle-app.setting
 # Cache of project
 .gradletasknamecache
 
+# Local development and generated artifacts
+.idea/
+run/
+work/
+outputs/
+*.log
+hs_err_pid*
+replay_pid*
+
 # Eclipse Gradle plugin generated files
 # Eclipse Core
 .project

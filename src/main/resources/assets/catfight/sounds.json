@@ -1,0 +1,10 @@
+{
+  "cat_hiss": {
+    "subtitle": "subtitles.catfight.hiss",
+    "sounds": ["catfight:cat_hiss"]
+  },
+  "cat_tussle": {
+    "subtitle": "subtitles.catfight.tussle",
+    "sounds": ["catfight:cat_tussle"]
+  }
+}

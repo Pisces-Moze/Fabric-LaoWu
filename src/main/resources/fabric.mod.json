@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "catfight",
+  "version": "${version}",
+  "name": "猫猫应急 Cat Fight",
+  "description": "偶数只猫会两两威慑扭打；铲子或矿车还能把猫压成会移动的纸片猫。",
+  "authors": ["moze"],
+  "license": "GPL-2.0-only",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["cn.moze.catfight.CatFightMod"]
+  },
+  "mixins": [
+    "catfight.mixins.json",
+    { "config": "catfight.client.mixins.json", "environment": "client" }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
