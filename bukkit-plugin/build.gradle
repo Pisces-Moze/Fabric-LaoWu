@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+}
+
+group = 'cn.moze.catfight'
+version = '2.0.0'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+configurations {
+    latestApi
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
+    latestApi 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+processResources {
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+    from('../src/main/resources/assets/catfight/sounds') {
+        include '*.ogg'
+        into 'pack-sounds'
+    }
+}
+
+jar {
+    archiveBaseName = 'CatFight-Bukkit'
+}
+
+tasks.register('generateResourcePack', JavaExec) {
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'cn.moze.catfight.bukkit.ResourcePackBuildTool'
+    args layout.buildDirectory.file('distributions/catfight-pack-1.21.1.zip').get().asFile.absolutePath, '34'
+}
+
+build.dependsOn generateResourcePack
+
+tasks.register('compileLatestApi', JavaCompile) {
+    source = sourceSets.main.java
+    classpath = configurations.latestApi
+    destinationDirectory = layout.buildDirectory.dir('classes/latest-api')
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+check.dependsOn compileLatestApi
