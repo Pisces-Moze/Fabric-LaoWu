@@ -39,7 +39,9 @@ public abstract class FelineEntityModelMixin {
             this.head.originY -= 0.35F;
             this.head.originZ += 0.25F;
             this.head.pitch = -0.38F + twitch;
-            this.head.roll = phase == CatFightManager.THREAT ? 0.27F : -0.27F;
+            // Both opponents use the same local roll; their opposite body yaws turn
+            // it into a mirrored left/right lean in world space.
+            this.head.roll = 0.27F;
             this.upperTail.pitch = 1.18F;
             // CAT_TRANSFORMER makes the eight-pixel upper tail 6.4 pixels long.
             // Start the lower tail just inside that endpoint so rounding and motion
