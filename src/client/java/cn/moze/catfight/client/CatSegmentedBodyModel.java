@@ -15,13 +15,12 @@ import net.minecraft.client.render.entity.model.CatEntityModel;
 import net.minecraft.client.render.entity.model.FelineEntityModel;
 import net.minecraft.util.math.MathHelper;
 
-/** A five-bone replacement for the vanilla cat's single rigid torso cuboid. */
+/** A four-bone replacement for the vanilla cat's single rigid torso cuboid. */
 public final class CatSegmentedBodyModel extends Model<CatEntityRenderState> {
     private final ModelPart spine1;
     private final ModelPart spine2;
     private final ModelPart spine3;
     private final ModelPart spine4;
-    private final ModelPart spine5;
 
     public CatSegmentedBodyModel(boolean baby) {
         super(createRoot(baby), RenderLayers::entityCutoutNoCull);
@@ -29,42 +28,45 @@ public final class CatSegmentedBodyModel extends Model<CatEntityRenderState> {
         this.spine2 = this.spine1.getChild("spine2");
         this.spine3 = this.spine2.getChild("spine3");
         this.spine4 = this.spine3.getChild("spine4");
-        this.spine5 = this.spine4.getChild("spine5");
     }
 
     private static ModelPart createRoot(boolean baby) {
         ModelData data = new ModelData();
         ModelPartData root = data.getRoot();
-        Dilation dilation = new Dilation(0.0F);
+        Dilation dilation = Dilation.NONE;
+        Dilation jointDilation = new Dilation(-0.04F);
 
-        // Keep the vanilla 4 x 6 cross-section and 16-pixel body length. Each short
-        // cuboid overlaps the next joint by two pixels. The overlap remains inside
-        // the torso and prevents either the back or belly from opening while arched.
+        // Four exterior cuboids occupy separate 4-pixel sections of the vanilla
+        // 16-pixel torso. Their surfaces never overlap, preventing depth fighting.
         ModelPartData spine1 = root.addChild(
             "spine1",
-            ModelPartBuilder.create().uv(20, 0).cuboid(-2.0F, -3.0F, 0.0F, 4.0F, 6.0F, 5.0F, dilation),
+            ModelPartBuilder.create().uv(20, 0).cuboid(-2.0F, -3.0F, 0.0F, 4.0F, 6.0F, 4.0F, dilation),
             ModelTransform.origin(0.0F, 17.0F, -7.0F)
         );
         ModelPartData spine2 = spine1.addChild(
             "spine2",
-            ModelPartBuilder.create().uv(20, 3).cuboid(-2.0F, -3.0F, -1.0F, 4.0F, 6.0F, 5.0F, dilation),
-            ModelTransform.origin(0.0F, 0.0F, 3.0F)
+            ModelPartBuilder.create().uv(20, 4).cuboid(-2.0F, -3.0F, 0.0F, 4.0F, 6.0F, 4.0F, dilation),
+            ModelTransform.origin(0.0F, 0.0F, 4.0F)
         );
         ModelPartData spine3 = spine2.addChild(
             "spine3",
-            ModelPartBuilder.create().uv(20, 6).cuboid(-2.0F, -3.0F, -1.0F, 4.0F, 6.0F, 5.0F, dilation),
-            ModelTransform.origin(0.0F, 0.0F, 3.0F)
+            ModelPartBuilder.create().uv(20, 8).cuboid(-2.0F, -3.0F, 0.0F, 4.0F, 6.0F, 4.0F, dilation),
+            ModelTransform.origin(0.0F, 0.0F, 4.0F)
         );
         ModelPartData spine4 = spine3.addChild(
             "spine4",
-            ModelPartBuilder.create().uv(20, 9).cuboid(-2.0F, -3.0F, -1.0F, 4.0F, 6.0F, 5.0F, dilation),
-            ModelTransform.origin(0.0F, 0.0F, 3.0F)
+            ModelPartBuilder.create().uv(20, 12).cuboid(-2.0F, -3.0F, 0.0F, 4.0F, 6.0F, 4.0F, dilation),
+            ModelTransform.origin(0.0F, 0.0F, 4.0F)
         );
-        spine4.addChild(
-            "spine5",
-            ModelPartBuilder.create().uv(20, 12).cuboid(-2.0F, -3.0F, -1.0F, 4.0F, 6.0F, 5.0F, dilation),
-            ModelTransform.origin(0.0F, 0.0F, 3.0F)
-        );
+
+        // These narrow cores sit behind the outer skin at each hinge. They overlap
+        // only inside the body and are inset on every face, so they fill an opened
+        // joint without ever sharing a visible plane with an exterior cuboid.
+        ModelPartBuilder joint = ModelPartBuilder.create().uv(20, 0)
+            .cuboid(-2.0F, -3.0F, -1.1F, 4.0F, 6.0F, 2.2F, jointDilation);
+        spine2.addChild("joint2", joint, ModelTransform.NONE);
+        spine3.addChild("joint3", joint, ModelTransform.NONE);
+        spine4.addChild("joint4", joint, ModelTransform.NONE);
         TexturedModelData textured = TexturedModelData.of(data, 64, 32);
         if (baby) {
             textured = textured.transform(FelineEntityModel.BABY_TRANSFORMER);
@@ -80,13 +82,12 @@ public final class CatSegmentedBodyModel extends Model<CatEntityRenderState> {
         }
 
         float breathing = MathHelper.sin(state.age * 0.34F) * 0.012F;
-        // Small changes at five joints form the same arch without sharp, tearing
-        // hinges. Cumulative pitches progress smoothly from +0.22 to -0.22 radians.
+        // The four equal sections keep the chest and rump in their original places.
+        // Cumulative pitches progress smoothly from +0.22 to -0.23 radians.
         this.spine1.pitch = 0.22F + breathing;
-        this.spine2.pitch = -0.10F - breathing * 0.30F;
-        this.spine3.pitch = -0.12F - breathing * 0.20F;
-        this.spine4.pitch = -0.12F + breathing * 0.20F;
-        this.spine5.pitch = -0.10F + breathing * 0.30F;
+        this.spine2.pitch = -0.15F - breathing * 0.35F;
+        this.spine3.pitch = -0.15F;
+        this.spine4.pitch = -0.15F + breathing * 0.35F;
         this.spine1.roll = MathHelper.sin(state.age * 0.18F) * 0.008F;
     }
 }
