@@ -41,7 +41,10 @@ public abstract class FelineEntityModelMixin {
             this.head.pitch = -0.38F + twitch;
             this.head.roll = phase == CatFightManager.THREAT ? 0.27F : -0.27F;
             this.upperTail.pitch = 1.18F;
-            float upperLength = 6.4F;
+            // CAT_TRANSFORMER makes the eight-pixel upper tail 6.4 pixels long.
+            // Start the lower tail just inside that endpoint so rounding and motion
+            // can never reveal a bright line between the two independent root parts.
+            float upperLength = 6.22F;
             this.lowerTail.originX = this.upperTail.originX;
             this.lowerTail.originY = this.upperTail.originY + MathHelper.cos(this.upperTail.pitch) * upperLength;
             this.lowerTail.originZ = this.upperTail.originZ + MathHelper.sin(this.upperTail.pitch) * upperLength;

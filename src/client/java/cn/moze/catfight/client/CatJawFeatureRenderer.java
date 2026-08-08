@@ -8,17 +8,20 @@ import net.minecraft.client.render.entity.state.CatEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 
 public final class CatJawFeatureRenderer extends FeatureRenderer<CatEntityRenderState, CatEntityModel> {
-    private final CatJawModel jawModel;
+    private final CatJawModel adultJawModel;
+    private final CatJawModel babyJawModel;
 
     public CatJawFeatureRenderer(FeatureRendererContext<CatEntityRenderState, CatEntityModel> context) {
         super(context);
-        this.jawModel = new CatJawModel();
+        this.adultJawModel = new CatJawModel(false);
+        this.babyJawModel = new CatJawModel(true);
     }
 
     @Override
     public void render(MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CatEntityRenderState state, float limbAngle, float limbDistance) {
         if (((FightRenderState) state).catfight$getFightState() != 0) {
-            render(this.jawModel, state.texture, matrices, queue, light, state, -1, 2);
+            CatJawModel model = state.baby ? this.babyJawModel : this.adultJawModel;
+            render(model, state.texture, matrices, queue, light, state, -1, 2);
         }
     }
 }

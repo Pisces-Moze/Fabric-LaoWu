@@ -10,6 +10,8 @@ import net.minecraft.client.model.ModelPartData;
 import net.minecraft.client.model.ModelTransform;
 import net.minecraft.client.model.TexturedModelData;
 import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.entity.model.CatEntityModel;
+import net.minecraft.client.render.entity.model.FelineEntityModel;
 import net.minecraft.client.render.entity.state.CatEntityRenderState;
 import net.minecraft.util.math.MathHelper;
 
@@ -17,30 +19,36 @@ public final class CatJawModel extends Model<CatEntityRenderState> {
     private final ModelPart headJoint;
     private final ModelPart jaw;
 
-    public CatJawModel() {
-        super(createRoot(), RenderLayers::entityCutoutNoCull);
-        this.headJoint = this.root.getChild("head_joint");
+    public CatJawModel(boolean baby) {
+        super(createRoot(baby), RenderLayers::entityCutoutNoCull);
+        this.headJoint = this.root.getChild("head");
         this.jaw = this.headJoint.getChild("jaw");
     }
 
-    private static ModelPart createRoot() {
+    private static ModelPart createRoot(boolean baby) {
         ModelData data = new ModelData();
         Dilation dilation = new Dilation(0.0F);
         ModelPartData headJoint = data.getRoot().addChild(
-            "head_joint",
+            "head",
             ModelPartBuilder.create()
                 .cuboid("main", -2.5F, -2.0F, -3.0F, 5.0F, 4.0F, 5.0F, dilation)
                 .cuboid("upper_nose", -1.5F, -0.001F, -4.0F, 3, 1, 2, dilation, 0, 24)
                 .cuboid("ear1", -2.0F, -3.0F, 0.0F, 1, 1, 2, dilation, 0, 10)
                 .cuboid("ear2", 1.0F, -3.0F, 0.0F, 1, 1, 2, dilation, 6, 10),
-            ModelTransform.origin(0.0F, 16.8032F, -7.2F)
+            // Raw vanilla feline head pivot. Adult/baby and cat transforms are
+            // applied below in exactly the same order as the built-in model layer.
+            ModelTransform.origin(0.0F, 15.0F, -9.0F)
         );
         headJoint.addChild(
             "jaw",
             ModelPartBuilder.create().cuboid("lower_nose", -1.5F, 0.0F, -2.0F, 3, 1, 2, dilation, 0, 25),
             ModelTransform.origin(0.0F, 1.0F, -2.0F)
         );
-        return TexturedModelData.of(data, 64, 32).createModel();
+        TexturedModelData textured = TexturedModelData.of(data, 64, 32);
+        if (baby) {
+            textured = textured.transform(FelineEntityModel.BABY_TRANSFORMER);
+        }
+        return textured.transform(CatEntityModel.CAT_TRANSFORMER).createModel();
     }
 
     @Override
@@ -58,13 +66,11 @@ public final class CatJawModel extends Model<CatEntityRenderState> {
         }
         float open = 0.035F + chew * 0.31F;
 
-        // Reproduce CAT_TRANSFORMER on one parent joint. Both skull and hinged jaw then
-        // share exactly the same coordinate system instead of drifting in render space.
-        this.headJoint.xScale = 0.8F;
-        this.headJoint.yScale = 0.8F;
-        this.headJoint.zScale = 0.8F;
-        this.headJoint.originY = 16.8032F - 0.35F;
-        this.headJoint.originZ = -7.2F + 0.25F;
+        // The adult/baby geometry already uses the same transformer chain as the
+        // selected vanilla cat model. Only apply animation offsets here; applying a
+        // second scale at runtime made some threat poses appear abnormally enlarged.
+        this.headJoint.originY -= 0.35F;
+        this.headJoint.originZ += 0.25F;
         this.headJoint.pitch = -0.38F + MathHelper.sin(state.age * 1.91F) * 0.035F;
         this.headJoint.yaw = state.relativeHeadYaw * (float) (Math.PI / 180.0);
         this.headJoint.roll = fightState == CatFightManager.THREAT ? 0.27F : fightState == CatFightManager.THREAT_MIRRORED ? -0.27F : 0.0F;
