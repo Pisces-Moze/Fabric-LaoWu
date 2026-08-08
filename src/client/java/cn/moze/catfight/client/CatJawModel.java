@@ -72,8 +72,10 @@ public final class CatJawModel extends Model<CatEntityRenderState> {
         this.headJoint.originY -= 0.35F;
         this.headJoint.originZ += 0.25F;
         this.headJoint.pitch = -0.38F + MathHelper.sin(state.age * 1.91F) * 0.035F;
-        this.headJoint.yaw = state.relativeHeadYaw * (float) (Math.PI / 180.0);
-        this.headJoint.roll = fightState == CatFightManager.THREAT ? 0.27F : fightState == CatFightManager.THREAT_MIRRORED ? -0.27F : 0.0F;
+        float pairSide = fightState == CatFightManager.THREAT ? 1.0F
+            : fightState == CatFightManager.THREAT_MIRRORED ? -1.0F : 0.0F;
+        this.headJoint.yaw = state.relativeHeadYaw * (float) (Math.PI / 180.0) + pairSide * 0.24F;
+        this.headJoint.roll = pairSide * 0.27F;
         this.jaw.pitch = open;
         this.jaw.originY = 1.0F + chew * 0.12F;
     }
