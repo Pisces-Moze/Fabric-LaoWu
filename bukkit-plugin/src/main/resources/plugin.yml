@@ -6,10 +6,12 @@ author: moze
 description: Cat threat, tussle and paper-cat behavior for Bukkit/Paper 1.18.2-1.21.1
 commands:
   catfight:
-    description: CatFight administration
+    description: CatFight commands
     usage: /catfight <reload|pack|cleanup>
-    permission: catfight.admin
 permissions:
   catfight.admin:
     description: Allows CatFight administration commands
     default: op
+  catfight.pack:
+    description: Allows retrying the CatFight resource pack
+    default: true

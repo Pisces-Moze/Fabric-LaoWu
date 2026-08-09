@@ -19,7 +19,7 @@
 3. 将 `resource-pack.public-url` 改成玩家可以访问的地址，例如 `http://play.example.com:8123/catfight-pack.zip`。
 4. 确保配置的资源包端口可由玩家访问，然后重启或执行 `/catfight reload`。
 
-资源包默认为必需。这样所有玩家都能看到模型，也不会发生没有资源包的客户端只看到隐形猫的情况。
+资源包加载成功后才会启用自定义模型。如果1.20.1等客户端下载失败，插件默认安全退回原版猫显示，不再让玩家退出服务器。确实需要强制资源包时，可将 `resource-pack.kick-on-failure` 改为 `true`。
 
 ## 构建
 
@@ -29,4 +29,4 @@
 ..\gradlew.bat -p . clean build
 ```
 
-成品位于 `build/libs/CatFight-Bukkit-2.0.0.jar`。
+成品位于 `build/libs/CatFight-Bukkit-2.0.1.jar`。构建还会分别生成1.20.1和1.21.1资源包用于检查。

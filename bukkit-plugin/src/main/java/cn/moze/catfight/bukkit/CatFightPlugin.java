@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,6 +27,7 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
     private CatVisualManager visuals;
     private CatFightManager fights;
     private ResourcePackService resourcePack;
+    private final Set<UUID> packReadyPlayers = new HashSet<>();
 
     @Override
     public void onEnable() {
@@ -38,6 +43,7 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
         } catch (IOException exception) {
             getLogger().severe("Could not create/start the resource-pack service: " + exception.getMessage());
         }
+        visuals.setEnabled(false);
 
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getPluginManager().registerEvents(new CatInteractionListener(this), this);
@@ -62,16 +68,44 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskLater(this, () -> resourcePack.send(event.getPlayer()), 20L);
+        packReadyPlayers.remove(event.getPlayer().getUniqueId());
+        updateVisualAvailability();
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            resourcePack.send(event.getPlayer());
+            if (!resourcePack.canSend()) {
+                event.getPlayer().sendMessage(ChatColor.YELLOW
+                    + "CatFight资源包地址尚未配置，当前使用原版猫显示。请联系管理员设置resource-pack.public-url。"
+                );
+            }
+        }, 20L);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        packReadyPlayers.remove(event.getPlayer().getUniqueId());
+        Bukkit.getScheduler().runTask(this, this::updateVisualAvailability);
     }
 
     @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
         String status = event.getStatus().name();
-        if (getConfig().getBoolean("resource-pack.required", true)
-            && (status.equals("DECLINED") || status.equals("FAILED_DOWNLOAD"))) {
-            Bukkit.getScheduler().runTask(this, () -> event.getPlayer().kickPlayer(
-                ChatColor.RED + "本服务器需要 CatFight 资源包来显示猫的动画。"));
+        if (status.equals("SUCCESSFULLY_LOADED")) {
+            packReadyPlayers.add(event.getPlayer().getUniqueId());
+            updateVisualAvailability();
+            return;
+        }
+        if (isPackFailure(status)) {
+            packReadyPlayers.remove(event.getPlayer().getUniqueId());
+            updateVisualAvailability();
+            getLogger().warning("Resource pack was not applied for " + event.getPlayer().getName()
+                + ": " + status + ". Falling back to vanilla cat rendering.");
+            event.getPlayer().sendMessage(ChatColor.RED
+                + "CatFight资源包下载或加载失败，已安全切换为原版猫，不会将你踢出。可使用 /catfight pack 重试。"
+            );
+            if (getConfig().getBoolean("resource-pack.kick-on-failure", false)) {
+                Bukkit.getScheduler().runTask(this, () -> event.getPlayer().kickPlayer(
+                    ChatColor.RED + "本服务器要求成功加载CatFight资源包。"));
+            }
         }
     }
 
@@ -84,16 +118,27 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "reload":
+                if (!sender.hasPermission("catfight.admin")) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to reload CatFight.");
+                    return true;
+                }
                 reloadConfig();
                 resourcePack.stop();
                 try {
                     resourcePack.start();
+                    packReadyPlayers.clear();
+                    updateVisualAvailability();
+                    for (Player player : Bukkit.getOnlinePlayers()) resourcePack.send(player);
                     sender.sendMessage(ChatColor.GREEN + "CatFight 配置和资源包已重新加载。");
                 } catch (IOException exception) {
                     sender.sendMessage(ChatColor.RED + "资源包服务启动失败：" + exception.getMessage());
                 }
                 return true;
             case "pack":
+                if (!sender.hasPermission("catfight.pack")) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to request the resource pack.");
+                    return true;
+                }
                 if (sender instanceof Player) {
                     resourcePack.send((Player) sender);
                     sender.sendMessage(ChatColor.GREEN + "已重新发送资源包请求。");
@@ -102,6 +147,10 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
                 }
                 return true;
             case "cleanup":
+                if (!sender.hasPermission("catfight.admin")) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to clean up CatFight entities.");
+                    return true;
+                }
                 fights.shutdown();
                 visuals.cleanupAll(true);
                 sender.sendMessage(ChatColor.GREEN + "已清理全部 CatFight 模型载体并恢复猫。重新加载插件可继续配对。");
@@ -124,5 +173,24 @@ public final class CatFightPlugin extends JavaPlugin implements Listener, TabExe
         if (!minecraft.matches("1\\.(18\\.2|19(?:\\.\\d+)?|20(?:\\.\\d+)?|21(?:\\.[01])?)")) {
             getLogger().warning("This build targets Minecraft 1.18.2 through 1.21.1; detected " + minecraft + '.');
         }
+    }
+
+    private void updateVisualAvailability() {
+        boolean allReady = resourcePack != null && resourcePack.canSend() && !Bukkit.getOnlinePlayers().isEmpty();
+        if (allReady) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!packReadyPlayers.contains(player.getUniqueId())) {
+                    allReady = false;
+                    break;
+                }
+            }
+        }
+        visuals.setEnabled(allReady);
+    }
+
+    private static boolean isPackFailure(String status) {
+        return status.equals("DECLINED") || status.equals("FAILED_DOWNLOAD")
+            || status.equals("FAILED_RELOAD") || status.equals("INVALID_URL")
+            || status.equals("DISCARDED");
     }
 }

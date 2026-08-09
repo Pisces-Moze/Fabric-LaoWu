@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'cn.moze.catfight'
-version = '2.0.0'
+version = '2.0.1'
 
 repositories {
     mavenCentral()
@@ -50,7 +50,14 @@ tasks.register('generateResourcePack', JavaExec) {
     args layout.buildDirectory.file('distributions/catfight-pack-1.21.1.zip').get().asFile.absolutePath, '34'
 }
 
-build.dependsOn generateResourcePack
+tasks.register('generateResourcePack1201', JavaExec) {
+    dependsOn classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'cn.moze.catfight.bukkit.ResourcePackBuildTool'
+    args layout.buildDirectory.file('distributions/catfight-pack-1.20.1.zip').get().asFile.absolutePath, '15'
+}
+
+build.dependsOn generateResourcePack, generateResourcePack1201
 
 tasks.register('compileLatestApi', JavaCompile) {
     source = sourceSets.main.java

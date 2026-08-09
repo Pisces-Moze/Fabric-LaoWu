@@ -53,6 +53,10 @@ final class ResourcePackService {
         player.setResourcePack(publicUrl(), hash);
     }
 
+    boolean canSend() {
+        return hash != null && !publicUrl().isEmpty();
+    }
+
     Path packPath() {
         return packPath;
     }

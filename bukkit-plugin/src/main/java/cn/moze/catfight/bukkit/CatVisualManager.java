@@ -26,6 +26,7 @@ final class CatVisualManager implements Runnable {
     private final NamespacedKey originalInvisibleKey;
     private final NamespacedKey originalAiKey;
     private final Map<UUID, Rig> rigs = new HashMap<>();
+    private boolean enabled;
     private long tick;
 
     CatVisualManager(CatFightPlugin plugin) {
@@ -39,6 +40,7 @@ final class CatVisualManager implements Runnable {
     @Override
     public void run() {
         tick++;
+        if (!enabled) return;
         if (tick % 20 == 1) discoverFlatCats();
         List<UUID> stale = new ArrayList<>();
         for (Map.Entry<UUID, Rig> entry : rigs.entrySet()) {
@@ -61,6 +63,7 @@ final class CatVisualManager implements Runnable {
     }
 
     void setFight(Cat cat, FightPhase phase, boolean mirrored) {
+        if (!enabled) return;
         Rig old = rigs.remove(cat.getUniqueId());
         if (old != null) old.remove();
         hideOriginal(cat);
@@ -68,6 +71,7 @@ final class CatVisualManager implements Runnable {
     }
 
     void refresh(Cat cat) {
+        if (!enabled) return;
         Rig old = rigs.remove(cat.getUniqueId());
         if (old != null) old.remove();
         if (plugin.states().isFlat(cat)) {
@@ -96,6 +100,16 @@ final class CatVisualManager implements Runnable {
                     restoreOriginal(cat);
                 }
             }
+        }
+    }
+
+    void setEnabled(boolean enabled) {
+        if (this.enabled == enabled) return;
+        this.enabled = enabled;
+        if (!enabled) {
+            cleanupAll(true);
+        } else {
+            discoverFlatCats();
         }
     }
 

@@ -12,7 +12,8 @@ paper-cat:
 
 resource-pack:
   enabled: true
-  required: true
+  # Failed downloads fall back to visible vanilla cats by default instead of disconnecting players.
+  kick-on-failure: false
   # Public address players can reach. Example: http://play.example.com:8123/catfight-pack.zip
   public-url: ''
   bind-address: '0.0.0.0'

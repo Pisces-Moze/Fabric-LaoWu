@@ -51,7 +51,9 @@ final class ResourcePackBuilder {
                 put(zip, "assets/catfight/models/item/cat/" + name + "/paper.json",
                     variantModel("catfight:item/piece/paper", name, null));
                 for (int direction = 0; direction < 16; direction++) {
+                    // Keep equivalent display rotations in the vanilla range for 1.20.1 clients.
                     double rotation = direction * 22.5;
+                    if (rotation > 180.0) rotation -= 360.0;
                     put(zip, "assets/catfight/models/item/cat/" + name + "/paper_" + direction + ".json",
                         variantModel("catfight:item/cat/" + name + "/paper", name, rotation));
                 }
@@ -144,7 +146,7 @@ final class ResourcePackBuilder {
     }
 
     private static String modelHeader() {
-        return "{\"credit\":\"moze CatFight\",\"texture_size\":[64,32],\"textures\":{\"particle\":\"#cat\"},"
+        return "{\"credit\":\"moze CatFight\",\"textures\":{\"particle\":\"#cat\"},"
             + "\"display\":{\"head\":{\"rotation\":[0,0,0],\"translation\":[0,0,0],\"scale\":[0.55,0.55,0.55]}},";
     }
 
